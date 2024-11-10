@@ -1,6 +1,9 @@
 import pandas as pd
 import numpy as np
 from sklearn import preprocessing
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+import statsmodels.api as sm
 
 # Veriyi okuma
 customer_data = pd.read_csv("customer_feedback_satisfaction.csv")
@@ -63,3 +66,35 @@ new_data2 = pd.concat([new_data1, data2_df, feedbackscore_df, loyaltyLevel_df, d
 
 # Sonuçları yazdırma
 print(new_data2)
+
+# Bağımsız değişkenler (x) ve bağımlı değişken (y)
+left_x = new_data2.iloc[:, 1:9].values
+right_x = new_data2.iloc[:, 10:].values
+
+left_x_df = pd.DataFrame(left_x, columns=new_data2.columns[1:9])
+right_x_df = pd.DataFrame(right_x, columns=new_data2.columns[10:])
+
+# x ve y'yi birleştir
+x = pd.concat([left_x_df, right_x_df], axis=1)
+y = new_data2.iloc[:, 9].values
+
+# Eğitim ve test setlerine ayırma
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.33, random_state=0)
+
+# Sklearn ile doğrusal regresyon
+regressor = LinearRegression()
+regressor.fit(x_train, y_train)
+
+# Test setinde tahmin yapma
+y_pred = regressor.predict(x_test)
+
+# Statsmodels ile doğrusal regresyon modeli oluşturma
+# Sabit sütun eklemek için
+ones = np.ones((x.shape[0], 1))  # x'in satır sayısı kadar 1'lerle bir sütun ekliyoruz
+X = np.append(ones, x, axis=1)   # Sabit sütun ile x'i birleştiriyoruz
+
+# Statsmodels modelini kurma
+model = sm.OLS(y, X).fit()  # OLS modelini fit etme
+
+# Model özetini yazdırma
+print(model.summary())
