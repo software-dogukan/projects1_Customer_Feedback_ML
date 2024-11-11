@@ -4,6 +4,7 @@ from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 import statsmodels.api as sm
+import matplotlib.pyplot as plt
 
 # Veriyi okuma
 customer_data = pd.read_csv("customer_feedback_satisfaction.csv")
@@ -64,19 +65,14 @@ data3_df = pd.DataFrame(data3, columns=[customer_data.columns[-1]])
 new_data1 = pd.concat([data1_df, gender_df, country_df], axis=1)
 new_data2 = pd.concat([new_data1, data2_df, feedbackscore_df, loyaltyLevel_df, data3_df], axis=1)
 
-# Sonuçları yazdırma
-print(new_data2)
-
 # Bağımsız değişkenler (x) ve bağımlı değişken (y)
-left_x = new_data2.iloc[:, 1:9].values
-right_x = new_data2.iloc[:, 10:].values
+left_x = new_data2.iloc[:, 1:-1].values
 
-left_x_df = pd.DataFrame(left_x, columns=new_data2.columns[1:9])
-right_x_df = pd.DataFrame(right_x, columns=new_data2.columns[10:])
+left_x_df = pd.DataFrame(left_x, columns=new_data2.columns[1:-1])
 
-# x ve y'yi birleştir
-x = pd.concat([left_x_df, right_x_df], axis=1)
-y = new_data2.iloc[:, 9].values
+# x ve y'yi belirle
+x = pd.concat([left_x_df], axis=1)
+y = new_data2.iloc[:, -1].values
 
 # Eğitim ve test setlerine ayırma
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.33, random_state=0)
@@ -90,11 +86,25 @@ y_pred = regressor.predict(x_test)
 
 # Statsmodels ile doğrusal regresyon modeli oluşturma
 # Sabit sütun eklemek için
-ones = np.ones((x.shape[0], 1))  # x'in satır sayısı kadar 1'lerle bir sütun ekliyoruz
-X = np.append(ones, x, axis=1)   # Sabit sütun ile x'i birleştiriyoruz
+X = sm.add_constant(x)   # Sabit sütun ekleme
 
 # Statsmodels modelini kurma
 model = sm.OLS(y, X).fit()  # OLS modelini fit etme
 
 # Model özetini yazdırma
 print(model.summary())
+print("Gerçek Y Değerleri:", y_test)
+print("Tahmin Edilen Y Değerleri:", y_pred)
+
+# Test setindeki doğrusal regresyonu görselleştirme
+plt.scatter(y_test, y_test, color='green', alpha=0.5, label='Gerçek Y')
+
+# Tahmin edilen verileri kırmızı renkte çiziyoruz
+plt.scatter(y_test, y_pred, color='red', alpha=0.5, label='Tahmin Edilen Y')
+
+plt.title('Test Seti - Gerçek vs Tahmin Edilen linear Reg')
+plt.xlabel('Gerçek Y')
+plt.ylabel('Tahmin Edilen Y')
+plt.grid(True)
+plt.legend()  # Grafik üzerindeki etiketleri göster
+plt.show()
